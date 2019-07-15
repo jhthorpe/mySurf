@@ -32,13 +32,13 @@ SUBROUTINE MD_start(job,ndim,tmax,dt,tsteps,mem,error)
   WRITE(*,*) "MD_start : called"
 
   !Read in initial position
-  INQUIRE(file='R0.dat',EXIST=ex)
+  INQUIRE(file='R0.in',EXIST=ex)
   IF (.NOT. ex) THEN
-    WRITE(*,*) "You need the R0.dat input file"
+    WRITE(*,*) "You need the R0.in input file"
     error = 1
     RETURN
   END IF
-  OPEN(file='R0.dat',unit=100,status='old')
+  OPEN(file='R0.in',unit=100,status='old')
   DO i=0,ndim-1
     READ(100,*) R0(i)
   END DO 
