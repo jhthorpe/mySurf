@@ -5,37 +5,34 @@ MODULE V
 
 CONTAINS
 !------------------------------------------------------------
-! V_eval
+! V_cHO
 !   - evaluate potential  
 !   - currently, this is hard coded, but could be generalized
 !------------------------------------------------------------
 ! ndim          : int, number of dimensions
 ! error         : int, error code
 ! R             : 1D real*8, coordinates [0:ndim-1]
+! k             : 1D real*8, force constants
+! l             : 2D real*8, coupling matrix
 ! V             : real*8, potential 
 ! dV            : 1D real*8, gradient    [0:ndim-1]
 ! error         : int, exit code
 
-SUBROUTINE V_eval(ndim,R,V,dV,error)
+SUBROUTINE V_cHO(ndim,R,k,l,V,dV,error)
   IMPLICIT NONE
 
+  REAL(KIND=8), DIMENSION(0:ndim-1,0:ndim-1),INTENT(IN) :: l
   REAL(KIND=8), DIMENSION(0:ndim-1), INTENT(INOUT) :: dV
-  REAL(KIND=8), DIMENSION(0:ndim-1), INTENT(IN) :: R
+  REAL(KIND=8), DIMENSION(0:ndim-1), INTENT(IN) :: R,k
   REAL(KIND=8), INTENT(INOUT) :: V
   INTEGER, INTENT(INOUT) :: error
   INTEGER, INTENT(IN) :: ndim
 
-  REAL(KIND=8), DIMENSION(0:ndim-1,0:ndim-1) :: l
   REAL(KIND=8), DIMENSION(0:ndim-1) :: dV0,dV1,dV2,dL0,dL1,dL2 
-  REAL(KIND=8), DIMENSION(0:ndim-1) :: k
   REAL(KIND=8) :: V0,V1,V2,L0,L1,L2 
   INTEGER :: i,j
 
   error = 0
-  k(0) = 1.0D0
-  k(1) = 1.0D0
-  l(0,1) = 0.1D0
-  l(1,0) = 0.1D0
 
   !Scalar terms
   V0 = 0.0D0
@@ -76,7 +73,7 @@ SUBROUTINE V_eval(ndim,R,V,dV,error)
 !  WRITE(*,*) "dV is:", dV
   
 
-END SUBROUTINE V_eval
+END SUBROUTINE V_cHO
 
 
 !------------------------------------------------------------

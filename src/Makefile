@@ -16,8 +16,8 @@ input.o : input.f90
 V.o : V.f90
 	$(FC) $(FFLAGS) -c V.f90
 
-MD.o : MD.f90 V.o
-	$(FC) $(FFLAGS) -c MD.f90 V.o
+MD.o : MD.f90 V.o input.o
+	$(FC) $(FFLAGS) -c MD.f90 V.o input.o
 
 xsurf.o : surf.f90 input.o MD.o V.o
 	$(FC) $(FFLAGS) -o xsurf.o surf.f90 input.o MD.o V.o 

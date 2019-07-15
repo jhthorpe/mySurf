@@ -4,7 +4,7 @@ MODULE input
 
 CONTAINS
 !------------------------------------------------------------
-! read_input
+! input_read
 !   - reads input
 !------------------------------------------------------------
 ! job           : int, job type
@@ -15,7 +15,7 @@ CONTAINS
 ! mem           : int*8, memory in megabytes
 ! error         : int, error code
 
-SUBROUTINE get_input(job,ndim,tmax,dt,tsteps,mem,error)
+SUBROUTINE input_get(job,ndim,tmax,dt,tsteps,mem,error)
   IMPLICIT NONE
   INTEGER(KIND=8), INTENT(INOUT) :: mem
   REAL(KIND=8), INTENT(INOUT) :: tmax,dt
@@ -23,18 +23,18 @@ SUBROUTINE get_input(job,ndim,tmax,dt,tsteps,mem,error)
   LOGICAL :: ex
 
   error = 0
-  CALL read_input(job,ndim,tmax,dt,mem,error)
+  CALL input_read(job,ndim,tmax,dt,mem,error)
   IF (error .NE. 0) RETURN
-  CALL check_input(job,ndim,tmax,dt,mem,error)
+  CALL input_check(job,ndim,tmax,dt,mem,error)
   IF (error .NE. 0) RETURN
   tsteps = CEILING(tmax/dt)
-  CALL write_input(job,ndim,tmax,dt,tsteps,mem,error) 
+  CALL input_write(job,ndim,tmax,dt,tsteps,mem,error) 
   IF (error .NE. 0) RETURN
 
-END SUBROUTINE get_input
+END SUBROUTINE input_get
 
 !------------------------------------------------------------
-! read_input
+! input_read
 !   -gets the input from surf.in
 !------------------------------------------------------------
 ! job           : int, job type
@@ -44,7 +44,7 @@ END SUBROUTINE get_input
 ! mem           : int, mem in MB
 ! error         : int, error code
 
-SUBROUTINE read_input(job,ndim,tmax,dt,mem,error)
+SUBROUTINE input_read(job,ndim,tmax,dt,mem,error)
   IMPLICIT NONE
   INTEGER(KIND=8), INTENT(INOUT) :: mem
   REAL(KIND=8), INTENT(INOUT) :: tmax,dt
@@ -64,10 +64,10 @@ SUBROUTINE read_input(job,ndim,tmax,dt,mem,error)
   READ(100,*) dt
   READ(100,*) mem
   CLOSE(unit=100)
-END SUBROUTINE read_input
+END SUBROUTINE input_read
 
 !------------------------------------------------------------
-! check_input
+! input_check
 !  -checks the input from surf.in
 !------------------------------------------------------------
 ! job           : int, job type
@@ -76,7 +76,7 @@ END SUBROUTINE read_input
 ! dt            : real*8, time increment
 ! error         : int, error code
 
-SUBROUTINE check_input(job,ndim,tmax,dt,mem,error)
+SUBROUTINE input_check(job,ndim,tmax,dt,mem,error)
   IMPLICIT NONE
   INTEGER(KIND=8), INTENT(IN) :: mem
   REAL(KIND=8), INTENT(IN) :: tmax,dt
@@ -104,10 +104,10 @@ SUBROUTINE check_input(job,ndim,tmax,dt,mem,error)
     WRITE(*,*) "mem must be more integer more than 1"
     error = 5
   END IF
-END SUBROUTINE check_input
+END SUBROUTINE input_check
 
 !------------------------------------------------------------
-! write_input
+! input_write
 !  -writes out input back to user
 !------------------------------------------------------------
 ! job           : int, job type
@@ -117,7 +117,7 @@ END SUBROUTINE check_input
 ! tsteps        : int, number of timesteps
 ! error         : int, error code
 
-SUBROUTINE write_input(job,ndim,tmax,dt,tsteps,mem,error)
+SUBROUTINE input_write(job,ndim,tmax,dt,tsteps,mem,error)
   IMPLICIT NONE
   INTEGER(KIND=8), INTENT(IN) :: mem
   REAL(KIND=8), INTENT(IN) :: tmax,dt
@@ -134,8 +134,72 @@ SUBROUTINE write_input(job,ndim,tmax,dt,tsteps,mem,error)
   WRITE(*,*) " dt     :", dt, " s"
   WRITE(*,*) " tsteps :", tsteps
   WRITE(*,*) " mem    :", mem, " MB"
-END SUBROUTINE write_input
+END SUBROUTINE input_write
 
+!------------------------------------------------------------
+! input_cHO
+!  - reads in parameters for coupled Harmonic Oscillator 
+!    jobs
+!------------------------------------------------------------
+! ndim          : int, number of dimensions
+! k             : 1D real*8, force constants
+! l             : 2D real*8, coupling constants
+! error         : int, error codes
+
+SUBROUTINE input_cHO(ndim,k,l,error)
+  IMPLICIT NONE
+  REAL(KIND=8), DIMENSION(0:ndim-1,0:ndim-1), INTENT(INOUT) :: l
+  REAL(KIND=8), DIMENSION(0:ndim-1), INTENT(INOUT) :: k
+  INTEGER, INTENT(INOUT) :: error
+  INTEGER, INTENT(IN) :: ndim
+  REAL(KIND=8) :: val
+  INTEGER :: n,i,j
+  LOGICAL :: ex
+  k = 0.0D0
+  l = 0.0D0
+  error = 0
+
+  WRITE(*,*) "input_cHO : reading from k.in and l.in"
+  
+  INQUIRE(file='k.in',EXIST=ex)
+  IF (.NOT. ex) THEN
+    WRITE(*,*) "You must supply force constants in 'k.in'"
+    error = 1
+    RETURN
+  ELSE
+    OPEN(file='k.in',unit=100,status='old')
+    DO n=0,ndim-1
+      READ(100,*) i,val
+      k(i-1) = val
+    END DO
+    CLOSE(unit=100)
+  END IF
+
+  INQUIRE(file='l.in',EXIST=ex)
+  IF (.NOT. ex) THEN
+    WRITE(*,*) "You must supply force constants in 'l.in'"
+    error = 1
+    RETURN
+  ELSE
+    OPEN(file='l.in',unit=101,status='old')
+    DO n=0,(ndim)**2-1
+      READ(101,*) i,j,val
+      l(i-1,j-1) = val
+    END DO
+    CLOSE(unit=101)
+  END IF
+
+  WRITE(*,*) "k vector was" 
+  DO i=0,ndim-1
+    WRITE(*,*) k(i)
+  END DO
+
+  WRITE(*,*) "l matrix is"
+  DO i=0,ndim-1
+    WRITE(*,*) l(i,0:ndim-1)
+  END DO
+
+END SUBROUTINE input_cHO
 !------------------------------------------------------------
 
 END MODULE input

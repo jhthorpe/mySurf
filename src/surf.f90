@@ -12,11 +12,11 @@ PROGRAM surf
   CALL CPU_TIME(ti)
   WRITE(*,*) "Starting mySurf"
 
-  CALL get_input(job,ndim,tmax,dt,tsteps,mem,error)
+  CALL input_get(job,ndim,tmax,dt,tsteps,mem,error)
   IF (error .NE. 0) CALL finish(error,ti)
 
   IF (job .EQ. 0) THEN
-    CALL MD_start(ndim,tmax,dt,tsteps,mem,error)
+    CALL MD_start(job,ndim,tmax,dt,tsteps,mem,error)
   END IF
   IF (error .NE. 0) CALL finish(error,ti)
 
