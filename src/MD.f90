@@ -2,6 +2,7 @@
 MODULE MD
   USE input
   USE V
+  USE nco
   
 CONTAINS
 !------------------------------------------------------------
@@ -112,6 +113,9 @@ END SUBROUTINE MD_run
 ! R0            : 1D real*8, initial coordinates
 ! dR            : 1D real*8, velocities
 ! ddR           : 1D real*8, acceleration
+! w             : 1D real*8, eigenvalues of Hessian
+! q             : 2D real*8, normal coordinate vectors
+! qi            : 2D real*8, inverse of q
 
 SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
   IMPLICIT NONE
@@ -121,10 +125,11 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
   INTEGER, INTENT(IN) :: ndim,tsteps,job
 
   REAL(KIND=8), DIMENSION(0:ndim-1,0:tsteps-1) :: R
+  REAL(KIND=8), DIMENSION(0:ndim-1,0:ndim-1) :: q,qi
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: l
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: k
   REAL(KIND=8), DIMENSION(0:tsteps-1) :: energy
-  REAL(KIND=8), DIMENSION(0:ndim-1) :: dR,ddR,ddRo,dV
+  REAL(KIND=8), DIMENSION(0:ndim-1) :: dR,ddR,ddRo,dV,w
   REAL(KIND=8) :: V,dtdt,ti,tf
   INTEGER :: n
 
@@ -141,6 +146,12 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
     CALL input_cHO(ndim,k(0:ndim-1),l(0:ndim-1,0:ndim-1),error)
     IF (error .NE. 0) THEN
       WRITE(*,*) "MD_incore : error out of input_cHO"
+      RETURN
+    END IF
+    CALL nco_cHO(ndim,k(0:ndim-1),l(0:ndim-1,0:ndim-1),w(0:ndim-1),&
+                 q(0:ndim-1,0:ndim-1),qi(0:ndim-1,0:ndim-1),error)
+    IF (error .NE. 0) THEN
+      WRITE(*,*) "MD_incore : error out of nco_cHO"
       RETURN
     END IF
     CALL V_cHO(ndim,R0(0:ndim-1),k(0:ndim-1),l(0:ndim-1,0:ndim-1),V,dV(0:ndim-1),error) 
@@ -189,9 +200,11 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
     WRITE(102,*) n*dt,energy(n)
   END DO
   CLOSE(unit=102)
+  !transform into normal coordinates
+  R = MATMUL(qi(0:ndim-1,0:ndim-1),R(0:ndim-1,0:tsteps-1))
   OPEN(file='nco.dat',unit=103,status='replace')
   DO n=0,tsteps-1
-    WRITE(103,*) n*dt,0.5D0*R(0,n)-0.5D0*R(1,n),0.5D0*R(0,n)+0.5D0*R(1,n)
+    WRITE(103,*) n*dt,R(0:ndim-1,n)
   END DO
   CLOSE(unit=103)
 

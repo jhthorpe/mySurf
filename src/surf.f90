@@ -3,6 +3,9 @@
 PROGRAM surf
   USE input
   USE MD
+  USE V
+  USE nco
+  USE linal
   IMPLICIT NONE
   INTEGER(KIND=8) :: mem
   REAL(KIND=8) :: tmax,dt
