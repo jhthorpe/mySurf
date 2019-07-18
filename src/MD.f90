@@ -141,33 +141,26 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
   error = 0
   dtdt = dt**2.0D0
 
-  IF (job .EQ. 0) THEN
+  IF (job .EQ. 0) THEN !general case
     CALL input_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
                        nl3,ql3,l3,nl4,ql4,l4,error)
     IF (error .NE. 0) RETURN
     CALL nco_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
                      nl3,ql3,l3,nl4,ql4,l4,w,q,qi,error)
     IF (error .NE. 0) RETURN
-
+    CALL V_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
+                   nl3,ql3,l3,nl4,ql4,l4,R0,V,dV,error)
+    IF (error .NE. 0) RETURN
   ELSE IF (job .EQ. 1) THEN
     ALLOCATE(k(0:ndim-1))
     ALLOCATE(l(0:ndim-1,0:ndim-1))
     CALL input_cHO(ndim,k(0:ndim-1),l(0:ndim-1,0:ndim-1),error)
-    IF (error .NE. 0) THEN
-      WRITE(*,*) "MD_incore : error out of input_cHO"
-      RETURN
-    END IF
+    IF (error .NE. 0) RETURN
     CALL nco_cHO(ndim,k(0:ndim-1),l(0:ndim-1,0:ndim-1),w(0:ndim-1),&
                  q(0:ndim-1,0:ndim-1),qi(0:ndim-1,0:ndim-1),error)
-    IF (error .NE. 0) THEN
-      WRITE(*,*) "MD_incore : error out of nco_cHO"
-      RETURN
-    END IF
+    IF (error .NE. 0) RETURN
     CALL V_cHO(ndim,R0(0:ndim-1),k(0:ndim-1),l(0:ndim-1,0:ndim-1),V,dV(0:ndim-1),error) 
-    IF (error .NE. 0 ) THEN
-      WRITE(*,*) "MD_incore : error out of V_eval"
-      RETURN
-    END IF
+    IF (error .NE. 0 ) RETURN
   ELSE
     WRITE(*,*) "Sorry, that jobtype is not supported"
     error = 1
@@ -183,13 +176,17 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
   DO n=1,tsteps-1
     R(0:ndim-1,n) = R(0:ndim-1,n-1) + dR*dt &
                     + 0.5D0*ddR*dtdt
-    IF (job .EQ. 1) THEN
+    IF (job .EQ. 0) THEN
+    CALL V_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
+                   nl3,ql3,l3,nl4,ql4,l4,R(0:ndim-1,n),V,dV,error)
+    ELSE IF (job .EQ. 1) THEN
       call V_cHO(ndim,R(0:ndim-1,n),k(0:ndim-1),l(0:ndim-1,0:ndim-1),V,dV(0:ndim-1),error)
     ELSE
       WRITE(*,*) "Sorry, that job type is not supported"
       error = 1
       RETURN
     END IF
+    IF (error .NE. 0) RETURN
     ddRo = ddR
     ddR = -dV
     dR = dR + 0.5D0*(ddRo + ddR)*dt 

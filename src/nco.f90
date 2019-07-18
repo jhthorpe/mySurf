@@ -165,7 +165,7 @@ SUBROUTINE nco_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
   INTEGER, INTENT(IN) :: ndim,nHO,nMO,nl1,nl2,nl3,nl4
   INTEGER, INTENT(INOUT) :: error
 
-  INTEGER :: n,i,j,k,l
+  INTEGER :: n,i,j
 
   error = 0
 
@@ -230,10 +230,11 @@ SUBROUTINE nco_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
   END DO
   !get the projection matrix
   qi = TRANSPOSE(q(0:ndim-1,0:ndim-1))
-  IF (error .NE. 0) THEN
-    WRITE(*,*) "nco_cHO : Error out of linal_invert",error
-    RETURN
-  END IF
+  WRITE(*,*)
+  WRITE(*,*) "Transform matrix"
+  DO i=0,ndim-1
+    WRITE(*,*) qi(i,0:ndim-1)
+  END DO
   w = SQRT(w)
 
   WRITE(*,*)

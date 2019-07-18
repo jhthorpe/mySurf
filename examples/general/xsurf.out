@@ -1,0 +1,48 @@
+ Starting mySurf
+ ======================================
+  mySurf input was...                  
+  job    :  0 - Harmonic, Morse, terms up to order 4
+  ndim   :           2
+  tmax   :   100.00000000000000       s
+  dt     :   1.0000000000000000E-003  s
+  tsteps :      100000
+  mem    :                  100  MB
+  ======================================
+ MD_start : called
+ R0 is   1.0000000000000000        1.0000000000000000     
+ MD_run : called
+ MD_run : starting memory analysis
+ MD_run : Holding everything in memory
+ MD_incore : Starting simulation
+ WARNING -- assuming mass is 1
+ qMO is
+ MO is
+
+ nco_general : called
+ Generating Renormalized Coordinates
+ Terms higher than 2nd order will be evaluated at q = 0
+
+ Constructing Hessian Matrix at q = 0
+
+ The Hessian is
+   1.0000000000000000     
+   0.0000000000000000        1.0000000000000000     
+
+ Diagonalizing Hessian
+
+ This should return the original matrix
+   1.0000000000000000        0.0000000000000000     
+   0.0000000000000000        1.0000000000000000     
+
+ Renormalized Frequencies
+   1.0000000000000000        1.0000000000000000     
+
+ Renormalized coordinate matrix
+   1.0000000000000000        0.0000000000000000     
+   0.0000000000000000        1.0000000000000000     
+
+ Initial energy is   1.0000000000000000     
+ MD_incore : simulation finished in    8.8213999999999987E-002 (s)
+ Writing output to R.dat, E.dat
+
+ mySurf finished with status           0  in    1.3660150000000002       (s)
