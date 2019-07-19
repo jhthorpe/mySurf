@@ -228,6 +228,7 @@ SUBROUTINE V_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
   !WRITE(*,*) "dvl3", dvl3
   !WRITE(*,*) "dvl4", dvl4
   !WRITE(*,*) "dV is", dV
+  !STOP
 
 END SUBROUTINE V_general
 

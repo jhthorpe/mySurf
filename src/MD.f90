@@ -101,6 +101,7 @@ END SUBROUTINE MD_run
 !------------------------------------------------------------
 ! MD_incore
 !  - runs MD with everything held in core
+!  - this code is messy, and should probably be cleaned up
 !------------------------------------------------------------
 ! job           : int, jobtype
 ! ndim          : int, number of dimensions
@@ -130,7 +131,7 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: k,HO,MO,l1,l2,l3,l4
   INTEGER, DIMENSION(:), ALLOCATABLE :: qHO,qMO,ql1,ql2,ql3,ql4
   REAL(KIND=8), DIMENSION(0:tsteps-1) :: energy
-  REAL(KIND=8), DIMENSION(0:ndim-1) :: dR,ddR,ddRo,dV,w
+  REAL(KIND=8), DIMENSION(0:ndim-1) :: dR,ddR,ddRo,dV,w,zero,Rn
   REAL(KIND=8) :: V,dtdt,ti,tf
   INTEGER :: n,nHO,nMO,nl1,nl2,nl3,nl4
 
@@ -140,30 +141,33 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
 
   error = 0
   dtdt = dt**2.0D0
+  zero = 0.0D0
 
-  IF (job .EQ. 0) THEN !general case
+  WRITE(*,*) "THE JOB TYPE IS...", job
+
+  IF (job .EQ. 0) THEN !general case, normco at 0
     CALL input_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
                        nl3,ql3,l3,nl4,ql4,l4,error)
     IF (error .NE. 0) RETURN
     CALL nco_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
-                     nl3,ql3,l3,nl4,ql4,l4,w,q,qi,error)
+                     nl3,ql3,l3,nl4,ql4,l4,zero,w,q,qi,error)
     IF (error .NE. 0) RETURN
     CALL V_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
                    nl3,ql3,l3,nl4,ql4,l4,R0,V,dV,error)
     IF (error .NE. 0) RETURN
-  ELSE IF (job .EQ. 1) THEN
-    ALLOCATE(k(0:ndim-1))
-    ALLOCATE(l(0:ndim-1,0:ndim-1))
-    CALL input_cHO(ndim,k(0:ndim-1),l(0:ndim-1,0:ndim-1),error)
+  ELSE IF (job .EQ. 1) THEN !general case, adaptive normco
+    CALL input_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
+                       nl3,ql3,l3,nl4,ql4,l4,error)
     IF (error .NE. 0) RETURN
-    CALL nco_cHO(ndim,k(0:ndim-1),l(0:ndim-1,0:ndim-1),w(0:ndim-1),&
-                 q(0:ndim-1,0:ndim-1),qi(0:ndim-1,0:ndim-1),error)
+    CALL nco_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
+                     nl3,ql3,l3,nl4,ql4,l4,R0,w,q,qi,error)
     IF (error .NE. 0) RETURN
-    CALL V_cHO(ndim,R0(0:ndim-1),k(0:ndim-1),l(0:ndim-1,0:ndim-1),V,dV(0:ndim-1),error) 
-    IF (error .NE. 0 ) RETURN
+    CALL V_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
+                   nl3,ql3,l3,nl4,ql4,l4,R0,V,dV,error)
+    IF (error .NE. 0) RETURN
   ELSE
     WRITE(*,*) "Sorry, that jobtype is not supported"
-    error = 1
+    error = -3
     RETURN
   END IF
 
@@ -176,14 +180,12 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
   DO n=1,tsteps-1
     R(0:ndim-1,n) = R(0:ndim-1,n-1) + dR*dt &
                     + 0.5D0*ddR*dtdt
-    IF (job .EQ. 0) THEN
+    IF (job .EQ. 0 .OR. job .EQ. 1) THEN
     CALL V_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
                    nl3,ql3,l3,nl4,ql4,l4,R(0:ndim-1,n),V,dV,error)
-    ELSE IF (job .EQ. 1) THEN
-      call V_cHO(ndim,R(0:ndim-1,n),k(0:ndim-1),l(0:ndim-1,0:ndim-1),V,dV(0:ndim-1),error)
     ELSE
       WRITE(*,*) "Sorry, that job type is not supported"
-      error = 1
+      error = 4
       RETURN
     END IF
     IF (error .NE. 0) RETURN
@@ -195,6 +197,7 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
   END DO
 
   CALL CPU_TIME(tf)
+  !Write Standard R output
   WRITE(*,*) "MD_incore : simulation finished in ",tf-ti,"(s)"
   WRITE(*,*) "Writing output to R.dat, E.dat"
   OPEN(file='R.dat',unit=101,status='replace')
@@ -207,17 +210,18 @@ SUBROUTINE MD_incore(job,ndim,tmax,dt,tsteps,R0,error)
     WRITE(102,*) n*dt,energy(n)
   END DO
   CLOSE(unit=102)
-  !transform into normal coordinates
-  R = MATMUL(qi(0:ndim-1,0:ndim-1),R(0:ndim-1,0:tsteps-1))
-  OPEN(file='nco.dat',unit=103,status='replace')
-  DO n=0,tsteps-1
-    WRITE(103,*) n*dt,R(0:ndim-1,n)
-  END DO
-  CLOSE(unit=103)
+  CALL CPU_TIME(ti)
+  WRITE(*,*) "Output written in ",ti-tf,"(s)"
+
+  ! Normal Coordinate Analysis
+  IF (job .EQ. 0 .OR. job .EQ. 1) THEN
+    CALL nco_analysis_incore(job,ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,&
+                             ql1,l1,nl2,ql2,l2,nl3,ql3,l3,nl4,ql4,l4,&
+                             dt,tsteps,R0,R,w,q,qi,error)
+  END IF
 
   IF (ALLOCATED(k)) DEALLOCATE(k)
   IF (ALLOCATED(l)) DEALLOCATE(l)
-
 
 END SUBROUTINE MD_incore
 

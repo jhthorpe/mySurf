@@ -83,9 +83,10 @@ SUBROUTINE input_check(job,ndim,tmax,dt,mem,error)
   INTEGER, INTENT(INOUT) :: error 
   INTEGER, INTENT(IN) :: job,ndim
   error = 0
-  IF (job .LT. 0 .OR. job .GT. 0) THEN
+  IF (job .LT. 0 .OR. job .GT. 1) THEN
     WRITE(*,*) "That jobtype is not supported. Options are..."
-    WRITE(*,*) " 0 : general potential - HO,MO, order 1-4 terms" 
+    WRITE(*,*) " 0 : general potential - q=0 normco" 
+    WRITE(*,*) " 1 : general potential - adaptive normco" 
     error = 1
   END IF
   IF (ndim .LT. 1) THEN
@@ -127,7 +128,9 @@ SUBROUTINE input_write(job,ndim,tmax,dt,tsteps,mem,error)
   WRITE(*,*) "======================================" 
   WRITE(*,*) " mySurf input was...                  "
   IF (job .EQ. 0) THEN
-    WRITE(*,*) " job    :  0 - Harmonic, Morse, terms up to order 4"
+    WRITE(*,*) " job    :  0 - general potential, standard normco" 
+  ELSE IF (job .EQ. 1) THEN
+    WRITE(*,*) " job    :  1 - general potential, adaptive normco"
   END IF
   WRITE(*,*) " ndim   :", ndim
   WRITE(*,*) " tmax   :", tmax, " s"
@@ -246,6 +249,12 @@ SUBROUTINE input_general(ndim,nHO,qHO,HO,nMO,qMO,MO,nl1,ql1,l1,nl2,ql2,l2,&
   nl2 = 0
   nl3 = 0
   nl4 = 0
+  WRITE(*,*) "Reading input for the genral case, Harmonic, Morse,   "
+  WRITE(*,*) "   and general polynomials up to order 4              "
+  WRITE(*,*) 
+  WRITE(*,*) "WARNING -- program will treat repeated assignments to "
+  WRITE(*,*) "           matrix elements as seperate values         "
+  WRITE(*,*) "           ie. 1,1,1,3 and 3,1,1,1 will count twice   "
 
   CALL input_HO(ndim,nHO,qHO,HO,error)
   IF (error .NE. 0) RETURN
@@ -348,8 +357,6 @@ SUBROUTINE input_MO(ndim,nMO,qMO,MO,error)
   DO i=0,nMO-1
     MO(2*i) = SQRT(MO(2*i)/(2.0D0*MO(2*i+1))) 
   END DO
-  WRITE(*,*) "qMO is",qMO
-  WRITE(*,*) "MO is", MO
 END SUBROUTINE input_MO
 
 !------------------------------------------------------------
