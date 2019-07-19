@@ -18,7 +18,7 @@ PROGRAM surf
   CALL input_get(job,ndim,tmax,dt,tsteps,mem,error)
   IF (error .NE. 0) CALL finish(error,ti)
 
-  IF (job .EQ. 0) THEN
+  IF (job .EQ. 0 .OR. job .EQ. 1) THEN
     CALL MD_start(job,ndim,tmax,dt,tsteps,mem,error)
   END IF
   IF (error .NE. 0) CALL finish(error,ti)
